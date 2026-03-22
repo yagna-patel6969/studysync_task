@@ -8,7 +8,7 @@ import {
   HiOutlineSun,
   HiOutlineMoon,
 } from 'react-icons/hi2';
-import { notifications } from '../../data/mockData';
+import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
@@ -17,7 +17,7 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useState('light');
-  const [notifs, setNotifs] = useState(notifications);
+  const [notifs, setNotifs] = useState([]);
   const notifRef = useRef(null);
   const profileRef = useRef(null);
   const { user, logout } = useAuth();
@@ -39,6 +39,24 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    if (user) {
+      fetchNotifs();
+      // Polling for new notifications every 60 seconds
+      const interval = setInterval(fetchNotifs, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchNotifs = async () => {
+    try {
+      const { data } = await api.get('/notifications');
+      setNotifs(data);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
@@ -54,16 +72,26 @@ export default function Navbar() {
     leaderboard: '📊',
   };
 
-  const markAllRead = () => {
-    setNotifs(notifs.map(n => ({ ...n, read: true })));
+  const markAllRead = async () => {
+    try {
+      await api.put('/notifications/read-all');
+      setNotifs(notifs.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
   };
 
-  const handleNotifClick = (notif) => {
+  const handleNotifClick = async (notif) => {
     if (!notif.read) {
-      setNotifs(notifs.map(n => n.id === notif.id ? { ...n, read: true } : n));
+      try {
+        await api.put(`/notifications/${notif._id}/read`);
+        setNotifs(notifs.map(n => n._id === notif._id ? { ...n, read: true } : n));
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
     }
     setShowNotifs(false);
-    if (notif.type === 'deadline') navigate('/tasks');
+    if (notif.type === 'deadline' || notif.type === 'task') navigate('/tasks');
     else if (notif.type === 'achievement' || notif.type === 'leaderboard') navigate('/leaderboard');
     else if (notif.type === 'group') navigate('/groups');
     else navigate('/');
@@ -135,7 +163,7 @@ export default function Navbar() {
                 <div className="notif-list">
                   {notifs.map((notif) => (
                     <div
-                      key={notif.id}
+                      key={notif._id}
                       className={`notif-item ${!notif.read ? 'unread' : ''}`}
                       onClick={() => handleNotifClick(notif)}
                       style={{ cursor: 'pointer' }}
@@ -143,11 +171,18 @@ export default function Navbar() {
                       <span className="notif-icon">{notifIcons[notif.type]}</span>
                       <div className="notif-content">
                         <p className="notif-message">{notif.message}</p>
-                        <span className="notif-time">{notif.time}</span>
+                        <span className="notif-time">
+                          {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
                       {!notif.read && <span className="notif-dot" />}
                     </div>
                   ))}
+                  {notifs.length === 0 && (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      No notifications yet
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

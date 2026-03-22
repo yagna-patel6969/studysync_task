@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   HiOutlineUser,
@@ -25,9 +25,11 @@ export default function Profile() {
   const [emailPref, setEmailPref] = useState(true);
   const [notifPref, setNotifPref] = useState(true);
   const [calendarLinked, setCalendarLinked] = useState(false);
+  const [userRank, setUserRank] = useState('-');
 
   useEffect(() => {
     checkCalendarStatus();
+    fetchUserRank();
     
     // Check URL for OAuth callback results
     const queryParams = new URLSearchParams(location.search);
@@ -46,6 +48,18 @@ export default function Profile() {
       setCalendarLinked(data.isLinked);
     } catch (error) {
       console.error('Failed to fetch calendar status:', error);
+    }
+  };
+
+  const fetchUserRank = async () => {
+    try {
+      const { data } = await api.get('/users/leaderboard');
+      const index = data.findIndex(u => u._id === user?.id);
+      if (index !== -1) {
+        setUserRank(index + 1);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user rank:', error);
     }
   };
 
@@ -74,7 +88,7 @@ export default function Profile() {
     }
   };
 
-  const xpProgress = ((user?.score || 0) / 1000) * 100;
+  const xpProgress = ((user?.score || 0) % 1000) / 10; // Progress to next 1000 pts
   const level = user?.level || 1;
   const score = user?.score || 0;
   const joinedDate = user?.createdAt || new Date();
@@ -115,7 +129,7 @@ export default function Profile() {
             </div>
             <div className="pq-stat">
               <HiOutlineTrophy style={{ color: 'var(--color-warning)' }} />
-              <span className="pq-value">#{user?.rank || '-'}</span>
+              <span className="pq-value">#{userRank}</span>
               <span className="pq-label">Rank</span>
             </div>
           </div>

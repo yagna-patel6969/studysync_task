@@ -9,6 +9,7 @@ const taskRoutes = require('./routes/taskRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const userRoutes = require('./routes/userRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Initialize Express App
 const app = express();
@@ -26,6 +27,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Default Root endpoint
 app.get('/', (req, res) => {

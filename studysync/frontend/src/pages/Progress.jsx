@@ -13,7 +13,6 @@ import {
   AreaChart, Area, PieChart, Pie, Cell,
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
-import { studyStats, weeklyReport } from '../data/mockData';
 import './Progress.css';
 
 const container = {
@@ -26,9 +25,35 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+const emptyStudyStats = {
+  daily: [
+    { day: 'Mon', hours: 0 }, { day: 'Tue', hours: 0 }, { day: 'Wed', hours: 0 },
+    { day: 'Thu', hours: 0 }, { day: 'Fri', hours: 0 }, { day: 'Sat', hours: 0 }, { day: 'Sun', hours: 0 }
+  ],
+  weekly: [
+    { week: 'W1', completed: 0, total: 0 }, { week: 'W2', completed: 0, total: 0 },
+    { week: 'W3', completed: 0, total: 0 }, { week: 'W4', completed: 0, total: 0 }
+  ],
+  categoryBreakdown: [
+    { name: 'Study', value: 0, color: '#6366f1' },
+    { name: 'Projects', value: 0, color: '#10b981' },
+    { name: 'Revision', value: 0, color: '#f59e0b' },
+    { name: 'Others', value: 100, color: '#94a3b8' }
+  ],
+  heatmap: Array(90).fill(0).map((_, i) => ({ date: `Day ${i}`, count: 0 }))
+};
+
+const emptyWeeklyReport = {
+  completed: 0,
+  pending: 0,
+  ongoing: 0,
+  streakDays: 0,
+  weekOf: new Date(),
+  improvementTip: "Start your first task to see insights here!"
+};
+
 export default function Progress() {
   const { user } = useAuth();
-  const completionRate = Math.round((weeklyReport.completed / (weeklyReport.completed + weeklyReport.pending + weeklyReport.ongoing)) * 100);
 
   const stats = {
     tasksCompleted: user?.tasksCompleted || 0,
@@ -37,13 +62,26 @@ export default function Progress() {
     streak: user?.streak || 0,
   };
 
+  const hasProgress = stats.tasksCompleted > 0;
+
   return (
     <div className="page-container">
       <h1 className="page-title">
         <HiOutlineChartBar style={{ verticalAlign: 'middle', marginRight: 8 }} />
         Progress & Reports
       </h1>
-      <p className="page-subtitle">Track your study journey and weekly performance</p>
+      {!hasProgress && (
+        <motion.div 
+          className="card" 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }}
+          style={{ marginBottom: 'var(--space-lg)', background: 'rgba(99, 102, 241, 0.1)', border: '1px dashed var(--color-primary)' }}
+        >
+          <p style={{ textAlign: 'center', padding: '20px' }}>
+            🚀 <strong>Welcome to your fresh start!</strong> Complete your first task to see real-time analytics and weekly reports.
+          </p>
+        </motion.div>
+      )}
 
       {/* Weekly Report Card */}
       <motion.div
@@ -57,7 +95,7 @@ export default function Progress() {
               <HiOutlineEnvelope style={{ verticalAlign: 'middle', marginRight: 8 }} />
               Weekly Report
             </h2>
-            <span className="report-week">Week of {new Date(weeklyReport.weekOf).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+            <span className="report-week">Week of {new Date(emptyWeeklyReport.weekOf).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
           </div>
           <span className="badge badge-primary">📧 Email sent</span>
         </div>
@@ -65,28 +103,28 @@ export default function Progress() {
         <motion.div className="report-stats grid-4" variants={container} initial="hidden" animate="show">
           <motion.div className="report-stat-card" variants={item}>
             <HiOutlineCheckCircle className="report-stat-icon" style={{ color: 'var(--color-success)' }} />
-            <span className="report-stat-value">{weeklyReport.completed}</span>
+            <span className="report-stat-value">{stats.tasksCompleted}</span>
             <span className="report-stat-label">Completed</span>
           </motion.div>
           <motion.div className="report-stat-card" variants={item}>
             <HiOutlineClock className="report-stat-icon" style={{ color: 'var(--color-warning)' }} />
-            <span className="report-stat-value">{weeklyReport.pending}</span>
+            <span className="report-stat-value">0</span>
             <span className="report-stat-label">Pending</span>
           </motion.div>
           <motion.div className="report-stat-card" variants={item}>
             <HiOutlineArrowTrendingUp className="report-stat-icon" style={{ color: 'var(--color-primary)' }} />
-            <span className="report-stat-value">{weeklyReport.ongoing}</span>
+            <span className="report-stat-value">0</span>
             <span className="report-stat-label">Ongoing</span>
           </motion.div>
           <motion.div className="report-stat-card" variants={item}>
             <HiOutlineFire className="report-stat-icon" style={{ color: 'var(--color-danger)' }} />
-            <span className="report-stat-value">{weeklyReport.streakDays}d</span>
+            <span className="report-stat-value">{stats.streak}d</span>
             <span className="report-stat-label">Streak</span>
           </motion.div>
         </motion.div>
 
         <div className="report-tip">
-          💡 <strong>AI Tip:</strong> {weeklyReport.improvementTip}
+          💡 <strong>AI Tip:</strong> {emptyWeeklyReport.improvementTip}
         </div>
       </motion.div>
 
@@ -102,7 +140,7 @@ export default function Progress() {
           <h3 className="section-title">📊 Daily Study Hours</h3>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={studyStats.daily}>
+              <BarChart data={emptyStudyStats.daily}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                 <XAxis dataKey="day" stroke="var(--text-muted)" fontSize={12} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} />
@@ -136,7 +174,7 @@ export default function Progress() {
           <h3 className="section-title">📈 Task Completion Trend</h3>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={studyStats.weekly}>
+              <AreaChart data={emptyStudyStats.weekly}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                 <XAxis dataKey="week" stroke="var(--text-muted)" fontSize={12} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} />
@@ -185,13 +223,13 @@ export default function Progress() {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
-                  data={studyStats.categoryBreakdown}
+                  data={emptyStudyStats.categoryBreakdown}
                   cx="50%" cy="50%"
                   innerRadius={55} outerRadius={85}
                   paddingAngle={4}
                   dataKey="value"
                 >
-                  {studyStats.categoryBreakdown.map((entry, i) => (
+                  {emptyStudyStats.categoryBreakdown.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
@@ -206,7 +244,7 @@ export default function Progress() {
               </PieChart>
             </ResponsiveContainer>
             <div className="pie-legend">
-              {studyStats.categoryBreakdown.map((cat) => (
+              {emptyStudyStats.categoryBreakdown.map((cat) => (
                 <div key={cat.name} className="pie-legend-item">
                   <span className="pie-dot" style={{ background: cat.color }} />
                   <span>{cat.name}</span>
@@ -227,7 +265,7 @@ export default function Progress() {
           <h3 className="section-title">🔥 Consistency Heatmap</h3>
           <p className="heatmap-subtitle">Last 90 days of activity</p>
           <div className="heatmap-grid">
-            {studyStats.heatmap.map((day, i) => (
+            {emptyStudyStats.heatmap.map((day, i) => (
               <div
                 key={i}
                 className="heatmap-cell"
@@ -277,7 +315,7 @@ export default function Progress() {
             <span className="overall-stat-label">Total Score</span>
           </div>
           <div className="overall-stat">
-            <span className="overall-stat-value">{completionRate}%</span>
+            <span className="overall-stat-value">{hasProgress ? Math.round((stats.tasksCompleted / (stats.tasksCompleted + 5)) * 100) : 0}%</span>
             <span className="overall-stat-label">Completion Rate</span>
           </div>
         </div>

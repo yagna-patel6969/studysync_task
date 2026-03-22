@@ -11,7 +11,6 @@ import {
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
-import { aiSuggestions } from '../data/mockData';
 import './Dashboard.css';
 
 const container = {
@@ -200,19 +199,9 @@ export default function Dashboard() {
               AI Suggestions
             </h2>
             <div className="ai-suggest-list">
-              {aiSuggestions.slice(0, 3).map((sug, i) => (
-                <div key={i} className="ai-suggest-item">
-                  <span className="ai-suggest-icon">
-                    {sug.type === 'resource' ? '📄' : '📝'}
-                  </span>
-                  <div className="ai-suggest-info">
-                    <span className="ai-suggest-title">{sug.title}</span>
-                    <span className="ai-suggest-meta">
-                      {sug.type === 'resource' ? sug.source : sug.reason}
-                    </span>
-                  </div>
-                </div>
-              ))}
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '10px' }}>
+                Complete more tasks to receive personalized AI study suggestions!
+              </p>
             </div>
           </motion.div>
         </div>

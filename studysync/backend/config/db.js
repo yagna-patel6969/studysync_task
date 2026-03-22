@@ -5,11 +5,19 @@ let mongod = null;
 
 const connectDB = async () => {
   try {
-    mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
+    let uri = process.env.MONGO_URI;
+
+    if (!uri) {
+      console.log('No MONGO_URI found in .env, starting In-Memory MongoDB Server...');
+      mongod = await MongoMemoryServer.create();
+      uri = mongod.getUri();
+    }
 
     const conn = await mongoose.connect(uri);
-    console.log(`MongoDB Memory Server Connected: ${conn.connection.host} at ${uri}`);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    if (!process.env.MONGO_URI) {
+      console.log(`(In-Memory Server active at ${uri})`);
+    }
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);

@@ -1,6 +1,7 @@
 const express = require('express');
 const Task = require('../models/Task');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 const router = express.Router();
 
@@ -42,6 +43,14 @@ router.post('/', protect, async (req, res) => {
     
     // Populate assignee for the response
     const populatedTask = await Task.findById(savedTask._id).populate('assignee', 'name initials id');
+    
+    // Create Notification
+    await Notification.create({
+      user: populatedTask.assignee._id,
+      type: 'task',
+      message: `New task assigned: ${populatedTask.title}`,
+      taskRef: populatedTask._id
+    });
     
     res.status(201).json(populatedTask);
   } catch (error) {
