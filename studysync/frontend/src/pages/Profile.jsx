@@ -15,7 +15,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api';
 import toast from 'react-hot-toast';
-import { badgeDefinitions, getAvatarColor } from '../data/mockData';
+import { badgeDefinitions, getAvatarColor } from '../constants';
+
 import './Profile.css';
 
 export default function Profile() {

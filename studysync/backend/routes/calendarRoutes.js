@@ -5,6 +5,7 @@ const Task = require('../models/Task');
 const protect = require('./middleware/authMiddleware');
 
 const router = express.Router();
+const appUrl = process.env.APP_URL || 'http://localhost:5173';
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -44,10 +45,10 @@ router.get('/callback', async (req, res) => {
     }
 
     // Redirect to frontend profile with success flag
-    res.redirect('http://localhost:5173/profile?calendar=success');
+    res.redirect(`${appUrl}/profile?calendar=success`);
   } catch (error) {
     console.error('Error retrieving access token', error);
-    res.redirect('http://localhost:5173/profile?calendar=error');
+    res.redirect(`${appUrl}/profile?calendar=error`);
   }
 });
 

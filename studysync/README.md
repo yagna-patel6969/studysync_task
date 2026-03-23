@@ -1,16 +1,66 @@
-# React + Vite
+# StudySync
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+StudySync is a full-stack study planning app with a React/Vite frontend and an Express/MongoDB backend.
 
-Currently, two official plugins are available:
+## Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `frontend/`: React app built with Vite
+- `backend/`: Express API, MongoDB models, auth, groups, notifications, calendar sync
 
-## React Compiler
+## Local Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Frontend:
 
-## Expanding the ESLint configuration
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Backend:
+
+```bash
+cd backend
+npm install
+copy .env.example .env
+npm run dev
+```
+
+## Required Backend Environment Variables
+
+See [`backend/.env.example`](/C:/Users/Yagna/OneDrive/Desktop/task/studysync/backend/.env.example).
+
+Minimum required for deployment:
+
+- `MONGO_URI`
+- `JWT_SECRET`
+- `CORS_ORIGINS`
+- `APP_URL`
+
+Optional integrations:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
+- `EMAIL_USER`
+- `EMAIL_APP_PASSWORD`
+
+## Frontend Environment Variables
+
+See [`frontend/.env.example`](/C:/Users/Yagna/OneDrive/Desktop/task/studysync/frontend/.env.example).
+
+- `VITE_API_URL`
+
+## Deployment Checklist
+
+1. Set `VITE_API_URL` to your deployed backend API, for example `https://api.example.com/api`.
+2. Set `APP_URL` to your deployed frontend URL, for example `https://app.example.com`.
+3. Set `CORS_ORIGINS` to the allowed frontend origins, comma-separated.
+4. Set `GOOGLE_REDIRECT_URI` to `https://your-backend-domain/api/calendar/callback` if Google Calendar is enabled.
+5. Provide a strong `JWT_SECRET`; the backend now exits on startup if it is missing.
+6. Do not commit `.env`, `node_modules`, build output, or local temp files.
+
+## Start Commands
+
+- Frontend build: `npm run build`
+- Backend start: `npm start`

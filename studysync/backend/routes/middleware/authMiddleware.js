@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'studysync_super_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const protect = async (req, res, next) => {
   let token;

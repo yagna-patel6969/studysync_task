@@ -1,25 +1,19 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-
-let mongod = null;
 
 const connectDB = async () => {
+  const uri = process.env.MONGO_URI;
+
+  if (!uri) {
+    console.error('FATAL: MONGO_URI is not defined in environment variables.');
+    console.error('Please set MONGO_URI in your .env file to a MongoDB Atlas connection string.');
+    process.exit(1);
+  }
+
   try {
-    let uri = process.env.MONGO_URI;
-
-    if (!uri) {
-      console.log('No MONGO_URI found in .env, starting In-Memory MongoDB Server...');
-      mongod = await MongoMemoryServer.create();
-      uri = mongod.getUri();
-    }
-
     const conn = await mongoose.connect(uri);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
-    if (!process.env.MONGO_URI) {
-      console.log(`(In-Memory Server active at ${uri})`);
-    }
   } catch (error) {
-    console.error(`Error: ${error.message}`);
+    console.error(`MongoDB connection error: ${error.message}`);
     process.exit(1);
   }
 };

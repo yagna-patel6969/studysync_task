@@ -16,7 +16,8 @@ import { useEffect } from 'react';
 import api from '../api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { getAvatarColor } from '../data/mockData';
+import { getAvatarColor } from '../constants';
+
 import './Groups.css';
 
 export default function Groups() {

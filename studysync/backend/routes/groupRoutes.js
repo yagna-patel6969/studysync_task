@@ -6,6 +6,7 @@ const protect = require('./middleware/authMiddleware');
 const sendEmail = require('../utils/email');
 
 const router = express.Router();
+const appUrl = process.env.APP_URL || 'http://localhost:5173';
 
 // Get all groups for the logged-in user
 router.get('/', protect, async (req, res) => {
@@ -40,14 +41,14 @@ router.post('/', protect, async (req, res) => {
           sendEmail({
             email: missingEmail,
             subject: `You've been invited to a StudySync Group!`,
-            message: `Hi there!\n\n${req.user.name || 'A user'} has invited you to join the group "${name}" on StudySync.\n\nPlease register at http://localhost:5173/register to collaborate on tasks and study together!\n\nCheers,\nThe StudySync Team`,
+            message: `Hi there!\n\n${req.user.name || 'A user'} has invited you to join the group "${name}" on StudySync.\n\nPlease register at ${appUrl}/register to collaborate on tasks and study together!\n\nCheers,\nThe StudySync Team`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb;">
                 <h2 style="color: #6366f1;">Welcome to StudySync! 📚</h2>
                 <p>Hi there,</p>
                 <p><strong>${req.user.name || 'A user'}</strong> has invited you to join their study group: <strong>${name}</strong>.</p>
                 <p>StudySync is an AI-powered gamified platform to help you track tasks, collaborate, and boost your productivity.</p>
-                <a href="http://localhost:5173/register" style="display: inline-block; background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 16px;">Create an Account</a>
+                <a href="${appUrl}/register" style="display: inline-block; background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 16px;">Create an Account</a>
                 <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">Cheers,<br/>The StudySync Team</p>
               </div>
             `

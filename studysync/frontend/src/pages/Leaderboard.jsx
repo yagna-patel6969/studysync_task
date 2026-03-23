@@ -14,7 +14,8 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { badgeDefinitions, scoringRules, getAvatarColor } from '../data/mockData';
+import { badgeDefinitions, scoringRules, getAvatarColor } from '../constants';
+
 import './Leaderboard.css';
 
 const container = {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   HiOutlineSparkles,
@@ -12,67 +12,104 @@ import {
   HiOutlineLink,
   HiOutlineAcademicCap,
 } from 'react-icons/hi2';
-import { aiSuggestions } from '../data/mockData';
+import api from '../api';
+import toast from 'react-hot-toast';
 import './AITools.css';
 
 export default function AITools() {
   const [activeMode, setActiveMode] = useState('summarize');
   const [notesInput, setNotesInput] = useState('');
   const [chatMessages, setChatMessages] = useState([
-    { role: 'ai', content: 'Hi! I\'m your AI study assistant. Ask me any doubt about your subjects, and I\'ll explain it in detail! 🎓' },
+    { role: 'ai', content: "Hi! I'm your AI study assistant. Ask me any doubt about your subjects, and I'll explain it in detail! 🎓" },
   ]);
   const [chatInput, setChatInput] = useState('');
   const [summaryResult, setSummaryResult] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [resources, setResources] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   const modes = [
     { id: 'summarize', icon: HiOutlineDocumentText, label: 'Summarize Notes' },
-    { id: 'doubts', icon: HiOutlineChatBubbleLeftRight, label: 'Doubt Solver' },
+    { id: 'doubts',    icon: HiOutlineChatBubbleLeftRight, label: 'Doubt Solver' },
     { id: 'resources', icon: HiOutlineBookOpen, label: 'Resources' },
-    { id: 'podcast', icon: HiOutlineSpeakerWave, label: 'Voice Notes' },
-    { id: 'explorer', icon: HiOutlineLightBulb, label: 'Topic Explorer' },
+    { id: 'podcast',   icon: HiOutlineSpeakerWave, label: 'Voice Notes' },
+    { id: 'explorer',  icon: HiOutlineLightBulb, label: 'Topic Explorer' },
   ];
 
-  const handleSummarize = () => {
-    if (!notesInput.trim()) return;
-    setIsProcessing(true);
-    setTimeout(() => {
-      setSummaryResult({
-        summary: 'React Hooks allow you to use state and other React features in functional components. The key hooks are useState for state management, useEffect for side effects, useContext for accessing context, and useRef for persistent references. Custom hooks let you extract and reuse component logic.',
-        keyPoints: [
-          'useState manages component state without classes',
-          'useEffect replaces lifecycle methods (componentDidMount, etc.)',
-          'useContext provides global state access without prop drilling',
-          'Custom hooks enable logic reuse across components',
-        ],
-        relatedTopics: ['React Context API', 'State Management with Redux', 'React Performance Optimization', 'React Server Components'],
-        realWorldUse: 'Used in production apps like Facebook, Instagram, and Airbnb for building interactive UIs with complex state management.',
-        importance: 'Critical for modern React development. 95% of new React projects use hooks exclusively.',
-      });
-      setIsProcessing(false);
-    }, 1500);
+  // Fetch resources when that tab is opened
+  useEffect(() => {
+    if (activeMode === 'resources' && resources.length === 0) {
+      fetchResources();
+    }
+  }, [activeMode]);
+
+  // Fetch AI suggestions when Topic Explorer tab is opened
+  useEffect(() => {
+    if (activeMode === 'explorer' && suggestions.length === 0) {
+      fetchSuggestions();
+    }
+  }, [activeMode]);
+
+  const fetchResources = async () => {
+    setResourcesLoading(true);
+    try {
+      const { data } = await api.get('/ai/resources');
+      setResources(data);
+    } catch (error) {
+      toast.error('Failed to load resources');
+    } finally {
+      setResourcesLoading(false);
+    }
   };
 
-  const handleSendChat = () => {
+  const fetchSuggestions = async () => {
+    setSuggestionsLoading(true);
+    try {
+      const { data } = await api.get('/ai/suggestions');
+      setSuggestions(data);
+    } catch (error) {
+      toast.error('Failed to load suggestions');
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  const handleSummarize = async () => {
+    if (!notesInput.trim()) return;
+    setIsProcessing(true);
+    setSummaryResult(null);
+    try {
+      const { data } = await api.post('/ai/summarize', { text: notesInput });
+      setSummaryResult(data);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to summarize notes');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSendChat = async () => {
     if (!chatInput.trim()) return;
     const userMsg = { role: 'user', content: chatInput };
     setChatMessages(prev => [...prev, userMsg]);
+    const currentInput = chatInput;
     setChatInput('');
-    
-    setTimeout(() => {
-      const aiResponse = {
-        role: 'ai',
-        content: `Great question about "${chatInput}"!\n\nLet me explain this step by step:\n\n1. **Core Concept**: This relates to fundamental principles in computer science and mathematics.\n\n2. **How it works**: The mechanism involves breaking down the problem into smaller sub-problems and solving them efficiently.\n\n3. **Example**: Consider a real-world scenario like organizing a library - you'd use similar principles to categorize and retrieve information.\n\n4. **Key takeaway**: Understanding this concept helps you build more efficient solutions.\n\nWould you like me to dive deeper into any specific aspect? 🤔`,
-      };
-      setChatMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-  };
 
-  const scheduledTasks = [
-    { title: 'Review React Hooks before test', priority: 'high', reason: 'Exam in 2 days', time: 'Tomorrow 9:00 AM' },
-    { title: 'Practice Dynamic Programming', priority: 'medium', reason: 'Weak area identified', time: 'Tomorrow 2:00 PM' },
-    { title: 'Revise MongoDB queries', priority: 'high', reason: 'Assignment due in 3 days', time: 'March 16, 10:00 AM' },
-  ];
+    // Show a typing indicator
+    setChatMessages(prev => [...prev, { role: 'ai', content: '...', loading: true }]);
+    try {
+      const { data } = await api.post('/ai/chat', { message: currentInput });
+      setChatMessages(prev => [
+        ...prev.filter(m => !m.loading),
+        { role: 'ai', content: data.reply },
+      ]);
+    } catch (error) {
+      setChatMessages(prev => prev.filter(m => !m.loading));
+      toast.error('Failed to get response');
+    }
+  };
 
   return (
     <div className="page-container">
@@ -99,8 +136,8 @@ export default function AITools() {
       </div>
 
       <div className="ai-content-area">
-        {/* Summarize Notes */}
         <AnimatePresence mode="wait">
+          {/* Summarize Notes */}
           {activeMode === 'summarize' && (
             <motion.div
               key="summarize"
@@ -145,24 +182,28 @@ export default function AITools() {
                     <p className="result-text">{summaryResult.summary}</p>
                   </div>
 
-                  <div className="card">
-                    <h3 className="result-title">🎯 Key Points</h3>
-                    <ul className="key-points-list">
-                      {summaryResult.keyPoints.map((point, i) => (
-                        <li key={i} className="key-point">{point}</li>
-                      ))}
-                    </ul>
-                  </div>
+                  {summaryResult.keyPoints?.length > 0 && (
+                    <div className="card">
+                      <h3 className="result-title">🎯 Key Points</h3>
+                      <ul className="key-points-list">
+                        {summaryResult.keyPoints.map((point, i) => (
+                          <li key={i} className="key-point">{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   <div className="grid-2">
-                    <div className="card">
-                      <h3 className="result-title">🔗 Related Topics</h3>
-                      <div className="related-topics">
-                        {summaryResult.relatedTopics.map((topic, i) => (
-                          <span key={i} className="related-topic-chip">{topic}</span>
-                        ))}
+                    {summaryResult.relatedTopics?.length > 0 && (
+                      <div className="card">
+                        <h3 className="result-title">🔗 Related Topics</h3>
+                        <div className="related-topics">
+                          {summaryResult.relatedTopics.map((topic, i) => (
+                            <span key={i} className="related-topic-chip">{topic}</span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div className="card">
                       <h3 className="result-title">🌍 Real-World Use</h3>
                       <p className="result-text">{summaryResult.realWorldUse}</p>
@@ -197,9 +238,13 @@ export default function AITools() {
                     >
                       {msg.role === 'ai' && <span className="chat-avatar">🤖</span>}
                       <div className="chat-content">
-                        {msg.content.split('\n').map((line, j) => (
-                          <p key={j}>{line}</p>
-                        ))}
+                        {msg.loading ? (
+                          <span style={{ color: 'var(--text-muted)' }}>Thinking...</span>
+                        ) : (
+                          msg.content.split('\n').map((line, j) => (
+                            <p key={j}>{line}</p>
+                          ))
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -236,29 +281,41 @@ export default function AITools() {
             >
               <div className="card">
                 <h3 className="section-title">📚 AI Recommended Resources</h3>
-                <p className="page-subtitle" style={{ marginBottom: 16 }}>Based on your tasks and study patterns</p>
-                <div className="resource-grid">
-                  {aiSuggestions.filter(s => s.type === 'resource').map((res, i) => (
-                    <motion.div
-                      key={i}
-                      className="resource-card"
-                      whileHover={{ y: -4, borderColor: 'var(--border-hover)' }}
-                    >
-                      <div className="resource-type-icon">
-                        {res.category === 'lecture' ? '🎬' : res.category === 'article' ? '📰' : '🔧'}
-                      </div>
-                      <div className="resource-info">
-                        <h4 className="resource-title">{res.title}</h4>
-                        <span className="resource-source">
-                          <HiOutlineLink /> {res.source}
+                <p className="page-subtitle" style={{ marginBottom: 16 }}>Based on your task tags and study patterns</p>
+                {resourcesLoading ? (
+                  <p style={{ color: 'var(--text-muted)', padding: 20 }}>Loading resources...</p>
+                ) : resources.length === 0 ? (
+                  <p style={{ color: 'var(--text-muted)', padding: 20, textAlign: 'center' }}>
+                    🚀 Create tasks with topic tags (e.g. "React", "ML") to receive personalized resource recommendations!
+                  </p>
+                ) : (
+                  <div className="resource-grid">
+                    {resources.map((res, i) => (
+                      <motion.a
+                        key={i}
+                        className="resource-card"
+                        href={res.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        whileHover={{ y: -4, borderColor: 'var(--border-hover)' }}
+                        style={{ textDecoration: 'none', display: 'block', cursor: 'pointer' }}
+                      >
+                        <div className="resource-type-icon">
+                          {res.category === 'lecture' ? '🎬' : res.category === 'article' ? '📰' : '🔧'}
+                        </div>
+                        <div className="resource-info">
+                          <h4 className="resource-title">{res.title}</h4>
+                          <span className="resource-source">
+                            <HiOutlineLink /> {res.source}
+                          </span>
+                        </div>
+                        <span className={`badge badge-${res.category === 'lecture' ? 'primary' : res.category === 'article' ? 'cyan' : 'success'}`}>
+                          {res.category}
                         </span>
-                      </div>
-                      <span className={`badge badge-${res.category === 'lecture' ? 'primary' : res.category === 'article' ? 'cyan' : 'success'}`}>
-                        {res.category}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
+                      </motion.a>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -290,7 +347,7 @@ export default function AITools() {
                 </div>
                 <h3 className="podcast-title">AI Voice Notes</h3>
                 <p className="podcast-desc">
-                  Convert your study notes into podcast-style audio summaries. 
+                  Convert your study notes into podcast-style audio summaries.
                   Paste your notes in the Summarize tab first, then generate voice notes here.
                 </p>
                 <div className="podcast-controls">
@@ -305,7 +362,7 @@ export default function AITools() {
             </motion.div>
           )}
 
-          {/* Topic Explorer */}
+          {/* Topic Explorer / AI Suggestions */}
           {activeMode === 'explorer' && (
             <motion.div
               key="explorer"
@@ -317,34 +374,46 @@ export default function AITools() {
               <div className="card">
                 <h3 className="section-title">
                   <HiOutlineLightBulb style={{ verticalAlign: 'middle', marginRight: 8, color: '#fbbf24' }} />
-                  AI Auto-Scheduled Tasks
+                  AI Priority Suggestions
                 </h3>
                 <p className="page-subtitle" style={{ marginBottom: 16 }}>
-                  Based on your pending tasks and study patterns, AI has scheduled these for you:
+                  Based on your deadlines and task status, here's what to focus on:
                 </p>
-                <div className="scheduled-tasks">
-                  {scheduledTasks.map((task, i) => (
-                    <motion.div
-                      key={i}
-                      className="scheduled-task-item"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.15 }}
-                    >
-                      <div className="scheduled-left">
-                        <HiOutlineAcademicCap className="scheduled-icon" />
-                        <div className="scheduled-info">
-                          <h4>{task.title}</h4>
-                          <span className="scheduled-reason">💡 {task.reason}</span>
+                {suggestionsLoading ? (
+                  <p style={{ color: 'var(--text-muted)', padding: 20 }}>Loading suggestions...</p>
+                ) : suggestions.length === 0 ? (
+                  <p style={{ color: 'var(--text-muted)', padding: 20, textAlign: 'center' }}>
+                    🎉 All caught up! Create tasks with deadlines to receive prioritized study suggestions.
+                  </p>
+                ) : (
+                  <div className="scheduled-tasks">
+                    {suggestions.map((task, i) => (
+                      <motion.div
+                        key={i}
+                        className="scheduled-task-item"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                      >
+                        <div className="scheduled-left">
+                          <HiOutlineAcademicCap className="scheduled-icon" />
+                          <div className="scheduled-info">
+                            <h4>{task.title}</h4>
+                            <span className="scheduled-reason">💡 {task.reason}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="scheduled-right">
-                        <span className={`badge priority-${task.priority}`}>{task.priority}</span>
-                        <span className="scheduled-time">🕐 {task.time}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                        <div className="scheduled-right">
+                          <span className={`badge priority-${task.priority}`}>{task.priorityLabel}</span>
+                          {task.deadline && (
+                            <span className="scheduled-time">
+                              🕐 {new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
